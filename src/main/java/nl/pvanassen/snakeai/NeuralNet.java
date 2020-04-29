@@ -1,3 +1,5 @@
+package nl.pvanassen.snakeai;
+
 import processing.core.PConstants;
 
 class NeuralNet {

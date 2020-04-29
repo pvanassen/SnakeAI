@@ -1,3 +1,5 @@
+package nl.pvanassen.snakeai;
+
 import processing.core.PApplet;
 
 class EvolutionGraph extends PApplet {

@@ -1,3 +1,5 @@
+package nl.pvanassen.snakeai;
+
 import processing.core.PApplet;
 import processing.core.PFont;
 import processing.data.Table;
@@ -8,7 +10,7 @@ import java.util.ArrayList;
 
 public class SnakeAI extends PApplet {
 
-    final int SIZE = 20;
+    static final int SIZE = 20;
     final int hidden_nodes = 16;
     final int hidden_layers = 2;
     final int fps = 100;  //15 is ideal for self play, increasing for AI does not directly increase speed, speed is dependant on processing power
@@ -222,10 +224,10 @@ public class SnakeAI extends PApplet {
             graph = new EvolutionGraph(this);
         }
         if (loadButton.collide(mouseX, mouseY)) {
-            selectInput("Load Snake Model", "fileSelectedIn");
+            selectInput("Load nl.pvanassen.snakeai.Snake Model", "fileSelectedIn");
         }
         if (saveButton.collide(mouseX, mouseY)) {
-            selectOutput("Save Snake Model", "fileSelectedOut");
+            selectOutput("Save nl.pvanassen.snakeai.Snake Model", "fileSelectedOut");
         }
         if (increaseMut.collide(mouseX, mouseY)) {
             mutationRate *= 2;
@@ -260,7 +262,7 @@ public class SnakeAI extends PApplet {
     }
 
     static public void main(String[] passedArgs) {
-        String[] appletArgs = new String[]{"SnakeAI"};
+        String[] appletArgs = new String[]{"nl.pvanassen.snakeai.SnakeAI"};
         if (passedArgs != null) {
             PApplet.main(concat(appletArgs, passedArgs));
         } else {

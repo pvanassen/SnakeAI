@@ -1,3 +1,5 @@
+package nl.pvanassen.snakeai;
+
 class Population {
 
     private final SnakeAI snakeAI;

@@ -1,3 +1,5 @@
+package nl.pvanassen.snakeai;
+
 import processing.core.PApplet;
 import processing.core.PConstants;
 import processing.core.PVector;
@@ -29,6 +31,8 @@ class Snake {
     Food food;
     NeuralNet brain;
 
+    private int foodCounter = 0;
+
     Snake(SnakeAI snakeAI) {
         this(snakeAI, snakeAI.hidden_layers);
     }
@@ -36,12 +40,12 @@ class Snake {
     Snake(SnakeAI snakeAI, int layers) {
         this.snakeAI = snakeAI;
         head = new PVector(800, snakeAI.height / 2);
-        food = new Food(snakeAI);
-        body = new ArrayList<PVector>();
+        food = new Food(snakeAI, foodCounter++);
+        body = new ArrayList<>();
         if (!snakeAI.humanPlaying) {
             vision = new float[24];
             decision = new float[4];
-            foodList = new ArrayList<Food>();
+            foodList = new ArrayList<>();
             foodList.add(food.clone());
             brain = new NeuralNet(snakeAI, 24, snakeAI.hidden_nodes, 4, layers);
             body.add(new PVector(800, (snakeAI.height / 2) + snakeAI.SIZE));
@@ -55,8 +59,8 @@ class Snake {
         replay = true;
         vision = new float[24];
         decision = new float[4];
-        body = new ArrayList<PVector>();
-        foodList = new ArrayList<Food>(foods.size());
+        body = new ArrayList<>();
+        foodList = new ArrayList<>(foods.size());
         for (Food f : foods) {  //clone all the food positions in the foodlist
             foodList.add(f.clone());
         }
@@ -144,9 +148,9 @@ class Snake {
             body.add(new PVector(head.x, head.y));
         }
         if (!replay) {
-            food = new Food(snakeAI);
+            food = new Food(snakeAI, foodCounter++);
             while (bodyCollide(food.pos.x, food.pos.y)) {
-                food = new Food(snakeAI);
+                food = new Food(snakeAI, foodCounter++);
             }
             if (!snakeAI.humanPlaying) {
                 foodList.add(food);
