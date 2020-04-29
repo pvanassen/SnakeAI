@@ -40,7 +40,7 @@ class Snake {
     Snake(SnakeAI snakeAI, int layers) {
         this.snakeAI = snakeAI;
         head = new PVector(800, snakeAI.height / 2);
-        food = new Food(snakeAI, foodCounter++);
+        food = new Food(foodCounter++);
         body = new ArrayList<>();
         if (!snakeAI.humanPlaying) {
             vision = new float[24];
@@ -48,8 +48,8 @@ class Snake {
             foodList = new ArrayList<>();
             foodList.add(food.clone());
             brain = new NeuralNet(snakeAI, 24, snakeAI.hidden_nodes, 4, layers);
-            body.add(new PVector(800, (snakeAI.height / 2) + snakeAI.SIZE));
-            body.add(new PVector(800, (snakeAI.height / 2) + (2 * snakeAI.SIZE)));
+            body.add(new PVector(800, (snakeAI.height / 2) + SnakeAI.SIZE));
+            body.add(new PVector(800, (snakeAI.height / 2) + (2 * SnakeAI.SIZE)));
             score += 2;
         }
     }
@@ -67,8 +67,8 @@ class Snake {
         food = foodList.get(foodItterate);
         foodItterate++;
         head = new PVector(800, snakeAI.height / 2);
-        body.add(new PVector(800, (snakeAI.height / 2) + snakeAI.SIZE));
-        body.add(new PVector(800, (snakeAI.height / 2) + (2 * snakeAI.SIZE)));
+        body.add(new PVector(800, (snakeAI.height / 2) + SnakeAI.SIZE));
+        body.add(new PVector(800, (snakeAI.height / 2) + (2 * SnakeAI.SIZE)));
         score += 2;
     }
 
@@ -89,25 +89,25 @@ class Snake {
     }
 
     public boolean wallCollide(float x, float y) {  //check if a position collides with the wall
-        if (x >= snakeAI.width - (snakeAI.SIZE) || x < 400 + snakeAI.SIZE || y >= snakeAI.height - (snakeAI.SIZE) || y < snakeAI.SIZE) {
+        if (x >= snakeAI.width - (SnakeAI.SIZE) || x < 400 + SnakeAI.SIZE || y >= snakeAI.height - (SnakeAI.SIZE) || y < SnakeAI.SIZE) {
             return true;
         }
         return false;
     }
 
     public void show() {  //show the snake
-        food.show();
+        food.show(snakeAI);
         snakeAI.fill(255);
         snakeAI.stroke(0);
         for (int i = 0; i < body.size(); i++) {
-            snakeAI.rect(body.get(i).x, body.get(i).y, snakeAI.SIZE, snakeAI.SIZE);
+            snakeAI.rect(body.get(i).x, body.get(i).y, SnakeAI.SIZE, SnakeAI.SIZE);
         }
         if (dead) {
             snakeAI.fill(150);
         } else {
             snakeAI.fill(255);
         }
-        snakeAI.rect(head.x, head.y, snakeAI.SIZE, snakeAI.SIZE);
+        snakeAI.rect(head.x, head.y, SnakeAI.SIZE, SnakeAI.SIZE);
     }
 
     public void move() {  //move the snake
@@ -148,9 +148,9 @@ class Snake {
             body.add(new PVector(head.x, head.y));
         }
         if (!replay) {
-            food = new Food(snakeAI, foodCounter++);
+            food = new Food(foodCounter++);
             while (bodyCollide(food.pos.x, food.pos.y)) {
-                food = new Food(snakeAI, foodCounter++);
+                food = new Food(foodCounter++);
             }
             if (!snakeAI.humanPlaying) {
                 foodList.add(food);
@@ -212,35 +212,35 @@ class Snake {
 
     public void look() {  //look in all 8 directions and check for food, body and wall
         vision = new float[24];
-        float[] temp = lookInDirection(new PVector(-snakeAI.SIZE, 0));
+        float[] temp = lookInDirection(new PVector(-SnakeAI.SIZE, 0));
         vision[0] = temp[0];
         vision[1] = temp[1];
         vision[2] = temp[2];
-        temp = lookInDirection(new PVector(-snakeAI.SIZE, -snakeAI.SIZE));
+        temp = lookInDirection(new PVector(-SnakeAI.SIZE, -SnakeAI.SIZE));
         vision[3] = temp[0];
         vision[4] = temp[1];
         vision[5] = temp[2];
-        temp = lookInDirection(new PVector(0, -snakeAI.SIZE));
+        temp = lookInDirection(new PVector(0, -SnakeAI.SIZE));
         vision[6] = temp[0];
         vision[7] = temp[1];
         vision[8] = temp[2];
-        temp = lookInDirection(new PVector(snakeAI.SIZE, -snakeAI.SIZE));
+        temp = lookInDirection(new PVector(SnakeAI.SIZE, -SnakeAI.SIZE));
         vision[9] = temp[0];
         vision[10] = temp[1];
         vision[11] = temp[2];
-        temp = lookInDirection(new PVector(snakeAI.SIZE, 0));
+        temp = lookInDirection(new PVector(SnakeAI.SIZE, 0));
         vision[12] = temp[0];
         vision[13] = temp[1];
         vision[14] = temp[2];
-        temp = lookInDirection(new PVector(snakeAI.SIZE, snakeAI.SIZE));
+        temp = lookInDirection(new PVector(SnakeAI.SIZE, SnakeAI.SIZE));
         vision[15] = temp[0];
         vision[16] = temp[1];
         vision[17] = temp[2];
-        temp = lookInDirection(new PVector(0, snakeAI.SIZE));
+        temp = lookInDirection(new PVector(0, SnakeAI.SIZE));
         vision[18] = temp[0];
         vision[19] = temp[1];
         vision[20] = temp[2];
-        temp = lookInDirection(new PVector(-snakeAI.SIZE, snakeAI.SIZE));
+        temp = lookInDirection(new PVector(-SnakeAI.SIZE, SnakeAI.SIZE));
         vision[21] = temp[0];
         vision[22] = temp[1];
         vision[23] = temp[2];
@@ -320,29 +320,29 @@ class Snake {
     }
 
     public void moveUp() {
-        if (yVel != snakeAI.SIZE) {
+        if (yVel != SnakeAI.SIZE) {
             xVel = 0;
-            yVel = -snakeAI.SIZE;
+            yVel = -SnakeAI.SIZE;
         }
     }
 
     public void moveDown() {
-        if (yVel != -snakeAI.SIZE) {
+        if (yVel != -SnakeAI.SIZE) {
             xVel = 0;
-            yVel = snakeAI.SIZE;
+            yVel = SnakeAI.SIZE;
         }
     }
 
     public void moveLeft() {
-        if (xVel != snakeAI.SIZE) {
-            xVel = -snakeAI.SIZE;
+        if (xVel != SnakeAI.SIZE) {
+            xVel = -SnakeAI.SIZE;
             yVel = 0;
         }
     }
 
     public void moveRight() {
-        if (xVel != -snakeAI.SIZE) {
-            xVel = snakeAI.SIZE;
+        if (xVel != -SnakeAI.SIZE) {
+            xVel = SnakeAI.SIZE;
             yVel = 0;
         }
     }

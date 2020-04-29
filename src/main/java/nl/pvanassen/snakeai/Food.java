@@ -1,5 +1,6 @@
 package nl.pvanassen.snakeai;
 
+import processing.core.PApplet;
 import processing.core.PVector;
 
 import java.util.LinkedList;
@@ -18,26 +19,24 @@ class Food {
         }
     }
 
-    private final SnakeAI snakeAI;
     private final int cnt;
     final PVector pos;
 
-    Food(SnakeAI snakeAI, int cnt) {
-        this.snakeAI = snakeAI;
+    Food(int cnt) {
         pos = locations.get(cnt);
         this.cnt = cnt;
     }
 
-    public void show() {
-        snakeAI.stroke(0);
-        snakeAI.fill(255, 255, 255);
-        snakeAI.text(cnt, pos.x - 10, pos.y - 10);
-        snakeAI.fill(255, 0, 0);
-        snakeAI.rect(pos.x, pos.y, snakeAI.SIZE, snakeAI.SIZE);
+    public void show(PApplet parent) {
+        parent.stroke(0);
+        parent.fill(255, 255, 255);
+        parent.text(cnt, pos.x - 10, pos.y - 10);
+        parent.fill(255, 0, 0);
+        parent.rect(pos.x, pos.y, SnakeAI.SIZE, SnakeAI.SIZE);
     }
 
     public Food clone() {
-        Food clone = new Food(snakeAI, cnt);
+        Food clone = new Food(cnt);
         clone.pos.x = pos.x;
         clone.pos.y = pos.y;
 
