@@ -1,5 +1,6 @@
 package nl.pvanassen.snakeai;
 
+import processing.core.PApplet;
 import processing.core.PConstants;
 
 class NeuralNet {
@@ -16,11 +17,11 @@ class NeuralNet {
         hLayers = hiddenLayers;
 
         weights = new Matrix[hLayers + 1];
-        weights[0] = new Matrix(snakeAI, hNodes, iNodes + 1);
+        weights[0] = new Matrix(hNodes, iNodes + 1);
         for (int i = 1; i < hLayers; i++) {
-            weights[i] = new Matrix(snakeAI, hNodes, hNodes + 1);
+            weights[i] = new Matrix(hNodes, hNodes + 1);
         }
-        weights[weights.length - 1] = new Matrix(snakeAI, oNodes, hNodes + 1);
+        weights[weights.length - 1] = new Matrix(oNodes, hNodes + 1);
 
         for (Matrix w : weights) {
             w.randomize();
@@ -78,7 +79,7 @@ class NeuralNet {
         return model;
     }
 
-    public void show(float x, float y, float w, float h, float[] vision, float[] decision) {
+    public void show(PApplet parent, float x, float y, float w, float h, float[] vision, float[] decision) {
         float space = 5;
         float nSize = (h - (space * (iNodes - 2))) / iNodes;
         float nSpace = (w - (weights.length * nSize)) / weights.length;
@@ -97,40 +98,40 @@ class NeuralNet {
         //DRAW NODES
         for (int i = 0; i < iNodes; i++) {  //DRAW INPUTS
             if (vision[i] != 0) {
-                snakeAI.fill(0, 255, 0);
+                parent.fill(0, 255, 0);
             } else {
-                snakeAI.fill(255);
+                parent.fill(255);
             }
-            snakeAI.stroke(0);
-            snakeAI.ellipseMode(PConstants.CORNER);
-            snakeAI.ellipse(x, y + (i * (nSize + space)), nSize, nSize);
-            snakeAI.textSize(nSize / 2);
-            snakeAI.textAlign(PConstants.CENTER, PConstants.CENTER);
-            snakeAI.fill(0);
-            snakeAI.text(i, x + (nSize / 2), y + (nSize / 2) + (i * (nSize + space)));
+            parent.stroke(0);
+            parent.ellipseMode(PConstants.CORNER);
+            parent.ellipse(x, y + (i * (nSize + space)), nSize, nSize);
+            parent.textSize(nSize / 2);
+            parent.textAlign(PConstants.CENTER, PConstants.CENTER);
+            parent.fill(0);
+            parent.text(i, x + (nSize / 2), y + (nSize / 2) + (i * (nSize + space)));
         }
 
         lc++;
 
         for (int a = 0; a < hLayers; a++) {
             for (int i = 0; i < hNodes; i++) {  //DRAW HIDDEN
-                snakeAI.fill(255);
-                snakeAI.stroke(0);
-                snakeAI.ellipseMode(PConstants.CORNER);
-                snakeAI.ellipse(x + (lc * nSize) + (lc * nSpace), y + hBuff + (i * (nSize + space)), nSize, nSize);
+                parent.fill(255);
+                parent.stroke(0);
+                parent.ellipseMode(PConstants.CORNER);
+                parent.ellipse(x + (lc * nSize) + (lc * nSpace), y + hBuff + (i * (nSize + space)), nSize, nSize);
             }
             lc++;
         }
 
         for (int i = 0; i < oNodes; i++) {  //DRAW OUTPUTS
             if (i == maxIndex) {
-                snakeAI.fill(0, 255, 0);
+                parent.fill(0, 255, 0);
             } else {
-                snakeAI.fill(255);
+                parent.fill(255);
             }
-            snakeAI.stroke(0);
-            snakeAI.ellipseMode(PConstants.CORNER);
-            snakeAI.ellipse(x + (lc * nSpace) + (lc * nSize), y + oBuff + (i * (nSize + space)), nSize, nSize);
+            parent.stroke(0);
+            parent.ellipseMode(PConstants.CORNER);
+            parent.ellipse(x + (lc * nSpace) + (lc * nSize), y + oBuff + (i * (nSize + space)), nSize, nSize);
         }
 
         lc = 1;
@@ -139,11 +140,11 @@ class NeuralNet {
         for (int i = 0; i < weights[0].rows; i++) {  //INPUT TO HIDDEN
             for (int j = 0; j < weights[0].cols - 1; j++) {
                 if (weights[0].matrix[i][j] < 0) {
-                    snakeAI.stroke(255, 0, 0);
+                    parent.stroke(255, 0, 0);
                 } else {
-                    snakeAI.stroke(0, 0, 255);
+                    parent.stroke(0, 0, 255);
                 }
-                snakeAI.line(x + nSize, y + (nSize / 2) + (j * (space + nSize)), x + nSize + nSpace, y + hBuff + (nSize / 2) + (i * (space + nSize)));
+                parent.line(x + nSize, y + (nSize / 2) + (j * (space + nSize)), x + nSize + nSpace, y + hBuff + (nSize / 2) + (i * (space + nSize)));
             }
         }
 
@@ -153,11 +154,11 @@ class NeuralNet {
             for (int i = 0; i < weights[a].rows; i++) {  //HIDDEN TO HIDDEN
                 for (int j = 0; j < weights[a].cols - 1; j++) {
                     if (weights[a].matrix[i][j] < 0) {
-                        snakeAI.stroke(255, 0, 0);
+                        parent.stroke(255, 0, 0);
                     } else {
-                        snakeAI.stroke(0, 0, 255);
+                        parent.stroke(0, 0, 255);
                     }
-                    snakeAI.line(x + (lc * nSize) + ((lc - 1) * nSpace), y + hBuff + (nSize / 2) + (j * (space + nSize)), x + (lc * nSize) + (lc * nSpace), y + hBuff + (nSize / 2) + (i * (space + nSize)));
+                    parent.line(x + (lc * nSize) + ((lc - 1) * nSpace), y + hBuff + (nSize / 2) + (j * (space + nSize)), x + (lc * nSize) + (lc * nSpace), y + hBuff + (nSize / 2) + (i * (space + nSize)));
                 }
             }
             lc++;
@@ -166,20 +167,20 @@ class NeuralNet {
         for (int i = 0; i < weights[weights.length - 1].rows; i++) {  //HIDDEN TO OUTPUT
             for (int j = 0; j < weights[weights.length - 1].cols - 1; j++) {
                 if (weights[weights.length - 1].matrix[i][j] < 0) {
-                    snakeAI.stroke(255, 0, 0);
+                    parent.stroke(255, 0, 0);
                 } else {
-                    snakeAI.stroke(0, 0, 255);
+                    parent.stroke(0, 0, 255);
                 }
-                snakeAI.line(x + (lc * nSize) + ((lc - 1) * nSpace), y + hBuff + (nSize / 2) + (j * (space + nSize)), x + (lc * nSize) + (lc * nSpace), y + oBuff + (nSize / 2) + (i * (space + nSize)));
+                parent.line(x + (lc * nSize) + ((lc - 1) * nSpace), y + hBuff + (nSize / 2) + (j * (space + nSize)), x + (lc * nSize) + (lc * nSpace), y + oBuff + (nSize / 2) + (i * (space + nSize)));
             }
         }
 
-        snakeAI.fill(0);
-        snakeAI.textSize(15);
-        snakeAI.textAlign(PConstants.CENTER, PConstants.CENTER);
-        snakeAI.text("U", x + (lc * nSize) + (lc * nSpace) + nSize / 2, y + oBuff + (nSize / 2));
-        snakeAI.text("D", x + (lc * nSize) + (lc * nSpace) + nSize / 2, y + oBuff + space + nSize + (nSize / 2));
-        snakeAI.text("L", x + (lc * nSize) + (lc * nSpace) + nSize / 2, y + oBuff + (2 * space) + (2 * nSize) + (nSize / 2));
-        snakeAI.text("R", x + (lc * nSize) + (lc * nSpace) + nSize / 2, y + oBuff + (3 * space) + (3 * nSize) + (nSize / 2));
+        parent.fill(0);
+        parent.textSize(15);
+        parent.textAlign(PConstants.CENTER, PConstants.CENTER);
+        parent.text("U", x + (lc * nSize) + (lc * nSpace) + nSize / 2, y + oBuff + (nSize / 2));
+        parent.text("D", x + (lc * nSize) + (lc * nSpace) + nSize / 2, y + oBuff + space + nSize + (nSize / 2));
+        parent.text("L", x + (lc * nSize) + (lc * nSpace) + nSize / 2, y + oBuff + (2 * space) + (2 * nSize) + (nSize / 2));
+        parent.text("R", x + (lc * nSize) + (lc * nSpace) + nSize / 2, y + oBuff + (3 * space) + (3 * nSize) + (nSize / 2));
     }
 }

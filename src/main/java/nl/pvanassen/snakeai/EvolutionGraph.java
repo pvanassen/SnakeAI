@@ -9,7 +9,7 @@ class EvolutionGraph extends PApplet {
     EvolutionGraph(SnakeAI snakeAI) {
         super();
         this.snakeAI = snakeAI;
-        PApplet.runSketch(new String[]{this.getClass().getSimpleName()}, this);
+        PApplet.runSketch(new String[]{"nl.pvanassen.snakeai.EvolutionGraph"}, this);
     }
 
     public void settings() {

@@ -7,6 +7,7 @@ import processing.data.TableRow;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.List;
 
 public class SnakeAI extends PApplet {
 
@@ -17,17 +18,17 @@ public class SnakeAI extends PApplet {
 
     int highscore = 0;
 
-    float mutationRate = 0.005f;
+    float mutationRate = 0.01f;
     float defaultmutation = mutationRate;
 
-    boolean humanPlaying = false;  //false for AI, true to play yourself
-    boolean replayBest = false;  //shows only the best of each generation
-    boolean seeVision = true;  //see the snakes vision
-    boolean modelLoaded = false;
+    static boolean humanPlaying = false;  //false for AI, true to play yourself
+    static boolean replayBest = true;  //shows only the best of each generation
+    static boolean seeVision = true;  //see the snakes vision
+    static boolean modelLoaded = false;
 
     PFont font;
 
-    ArrayList<Integer> evolution;
+    List<Integer> evolution;
 
     Button graphButton;
     Button loadButton;
@@ -48,7 +49,7 @@ public class SnakeAI extends PApplet {
 
     public void setup() {
         font = createFont("agencyfb-bold.ttf", 32);
-        evolution = new ArrayList<Integer>();
+        evolution = new ArrayList<>();
         graphButton = new Button(this, 349, 15, 100, 30, "Graph");
         loadButton = new Button(this, 249, 15, 100, 30, "Load");
         saveButton = new Button(this, 149, 15, 100, 30, "Save");
@@ -58,7 +59,7 @@ public class SnakeAI extends PApplet {
         if (humanPlaying) {
             snake = new Snake(this);
         } else {
-            pop = new Population(this, 2000); //adjust size of population
+            pop = new Population(this, 20000); //adjust size of population
         }
     }
 
@@ -72,7 +73,7 @@ public class SnakeAI extends PApplet {
         textFont(font);
         if (humanPlaying) {
             snake.move();
-            snake.show();
+            snake.show(this);
             fill(150);
             textSize(20);
             text("SCORE : " + snake.score, 500, 50);
@@ -87,7 +88,7 @@ public class SnakeAI extends PApplet {
                     pop.naturalSelection();
                 } else {
                     pop.update();
-                    pop.show();
+                    pop.show(this);
                 }
                 fill(150);
                 textSize(25);
@@ -104,8 +105,8 @@ public class SnakeAI extends PApplet {
                 model.look();
                 model.think();
                 model.move();
-                model.show();
-                model.brain.show(0, 0, 360, 790, model.vision, model.decision);
+                model.show(this);
+                model.brain.show(this, 0, 0, 360, 790, model.vision, model.decision);
                 if (model.dead) {
                     Snake newmodel = new Snake(this);
                     newmodel.brain = model.brain.clone();
@@ -143,7 +144,7 @@ public class SnakeAI extends PApplet {
                     in[i][j] = modelTable.getFloat(j + i * 25, "L0");
                 }
             }
-            weights[0] = new Matrix(this, in);
+            weights[0] = new Matrix(in);
 
             for (int h = 1; h < weights.length - 1; h++) {
                 float[][] hid = new float[hidden_nodes][hidden_nodes + 1];
@@ -152,7 +153,7 @@ public class SnakeAI extends PApplet {
                         hid[i][j] = modelTable.getFloat(j + i * (hidden_nodes + 1), "L" + h);
                     }
                 }
-                weights[h] = new Matrix(this, hid);
+                weights[h] = new Matrix(hid);
             }
 
             float[][] out = new float[4][hidden_nodes + 1];
@@ -161,9 +162,9 @@ public class SnakeAI extends PApplet {
                     out[i][j] = modelTable.getFloat(j + i * (hidden_nodes + 1), "L" + (weights.length - 1));
                 }
             }
-            weights[weights.length - 1] = new Matrix(this, out);
+            weights[weights.length - 1] = new Matrix(out);
 
-            evolution = new ArrayList<Integer>();
+            evolution = new ArrayList<>();
             int g = 0;
             int genscore = modelTable.getInt(g, "Graph");
             while (genscore != 0) {

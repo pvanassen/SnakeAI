@@ -2,21 +2,21 @@ package nl.pvanassen.snakeai;
 
 import processing.core.PApplet;
 
+import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
+
 class Matrix {
 
-    private final SnakeAI snakeAI;
     int rows, cols;
     float[][] matrix;
 
-    Matrix(SnakeAI snakeAI, int r, int c) {
-        this.snakeAI = snakeAI;
+    Matrix(int r, int c) {
         rows = r;
         cols = c;
         matrix = new float[rows][cols];
     }
 
-    Matrix(SnakeAI snakeAI, float[][] m) {
-        this.snakeAI = snakeAI;
+    Matrix(float[][] m) {
         matrix = m;
         rows = matrix.length;
         cols = matrix[0].length;
@@ -33,7 +33,7 @@ class Matrix {
     }
 
     public Matrix dot(Matrix n) {
-        Matrix result = new Matrix(snakeAI, rows, n.cols);
+        Matrix result = new Matrix(rows, n.cols);
 
         if (cols == n.rows) {
             for (int i = 0; i < rows; i++) {
@@ -52,13 +52,13 @@ class Matrix {
     public void randomize() {
         for (int i = 0; i < rows; i++) {
             for (int j = 0; j < cols; j++) {
-                matrix[i][j] = snakeAI.random(-1, 1);
+                matrix[i][j] = (float)ThreadLocalRandom.current().nextDouble(-1, 1);
             }
         }
     }
 
     public Matrix singleColumnMatrixFromArray(float[] arr) {
-        Matrix n = new Matrix(snakeAI, arr.length, 1);
+        Matrix n = new Matrix(arr.length, 1);
         for (int i = 0; i < arr.length; i++) {
             n.matrix[i][0] = arr[i];
         }
@@ -76,7 +76,7 @@ class Matrix {
     }
 
     public Matrix addBias() {
-        Matrix n = new Matrix(snakeAI, rows + 1, 1);
+        Matrix n = new Matrix(rows + 1, 1);
         for (int i = 0; i < rows; i++) {
             n.matrix[i][0] = matrix[i][0];
         }
@@ -85,7 +85,7 @@ class Matrix {
     }
 
     public Matrix activate() {
-        Matrix n = new Matrix(snakeAI, rows, cols);
+        Matrix n = new Matrix(rows, cols);
         for (int i = 0; i < rows; i++) {
             for (int j = 0; j < cols; j++) {
                 n.matrix[i][j] = relu(matrix[i][j]);
@@ -101,9 +101,9 @@ class Matrix {
     public void mutate(float mutationRate) {
         for (int i = 0; i < rows; i++) {
             for (int j = 0; j < cols; j++) {
-                float rand = snakeAI.random(1);
+                float rand = ThreadLocalRandom.current().nextInt(1);
                 if (rand < mutationRate) {
-                    matrix[i][j] += snakeAI.randomGaussian() / 5;
+                    matrix[i][j] += ((float)ThreadLocalRandom.current().nextGaussian()) / 5;
 
                     if (matrix[i][j] > 1) {
                         matrix[i][j] = 1;
@@ -117,10 +117,10 @@ class Matrix {
     }
 
     public Matrix crossover(Matrix partner) {
-        Matrix child = new Matrix(snakeAI, rows, cols);
+        Matrix child = new Matrix(rows, cols);
 
-        int randC = PApplet.floor(snakeAI.random(cols));
-        int randR = PApplet.floor(snakeAI.random(rows));
+        int randC = ThreadLocalRandom.current().nextInt(cols);
+        int randR = ThreadLocalRandom.current().nextInt(rows);
 
         for (int i = 0; i < rows; i++) {
             for (int j = 0; j < cols; j++) {
@@ -135,7 +135,7 @@ class Matrix {
     }
 
     public Matrix clone() {
-        Matrix clone = new Matrix(snakeAI, rows, cols);
+        Matrix clone = new Matrix(rows, cols);
         for (int i = 0; i < rows; i++) {
             for (int j = 0; j < cols; j++) {
                 clone.matrix[i][j] = matrix[i][j];

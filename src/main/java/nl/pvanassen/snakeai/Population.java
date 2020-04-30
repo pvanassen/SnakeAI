@@ -1,9 +1,21 @@
 package nl.pvanassen.snakeai;
 
+import com.google.common.collect.Lists;
+import processing.core.PApplet;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 class Population {
 
+    private final ForkJoinPool pool = new ForkJoinPool(Runtime.getRuntime().availableProcessors() * 2);
+
     private final SnakeAI snakeAI;
-    Snake[] snakes;
+    List<Snake> snakes;
     Snake bestSnake;
 
     int bestSnakeScore = 0;
@@ -15,18 +27,19 @@ class Population {
 
     Population(SnakeAI snakeAI, int size) {
         this.snakeAI = snakeAI;
-        snakes = new Snake[size];
-        for (int i = 0; i < snakes.length; i++) {
-            snakes[i] = new Snake(snakeAI);
+        snakes = new ArrayList<>(size);
+        for (int i = 0; i < size; i++) {
+            snakes.add(new Snake(snakeAI));
         }
-        bestSnake = snakes[0].clone();
+        bestSnake = snakes.get(0).clone();
         bestSnake.replay = true;
     }
 
     public boolean done() {  //check if all the snakes in the population are dead
-        for (int i = 0; i < snakes.length; i++) {
-            if (!snakes[i].dead)
+        for (Snake snake : snakes) {
+            if (!snake.dead) {
                 return false;
+            }
         }
         if (!bestSnake.dead) {
             return false;
@@ -35,27 +48,44 @@ class Population {
     }
 
     public void update() {  //update all the snakes in the generation
-        if (!bestSnake.dead) {  //if the best snake is not dead update it, this snake is a replay of the best from the past generation
-            bestSnake.look();
-            bestSnake.think();
-            bestSnake.move();
+        List<Snake> livingSnakes = Stream.concat(snakes.stream(), Stream.of(bestSnake))
+                .filter(snake -> !snake.dead)
+                .collect(Collectors.toList());
+        int partitionSize = (int)Math.ceil(livingSnakes.size() / (float)Runtime.getRuntime().availableProcessors());
+        Lists.partition(livingSnakes, partitionSize)
+                .stream()
+                .map(Task::new)
+                .forEach(pool::submit);
+
+        if (!pool.awaitQuiescence(1, TimeUnit.SECONDS)) {
+            throw new IllegalArgumentException("Pool not done: " + pool);
         }
-        for (int i = 0; i < snakes.length; i++) {
-            if (!snakes[i].dead) {
-                snakes[i].look();
-                snakes[i].think();
-                snakes[i].move();
+    }
+
+    static class Task implements Runnable {
+        private final List<Snake> snakes;
+
+        Task(List<Snake> snakes) {
+            this.snakes = snakes;
+        }
+
+        @Override
+        public void run() {
+            for (Snake snake : snakes) {
+                snake.look();
+                snake.think();
+                snake.move();
             }
         }
     }
 
-    public void show() {  //show either the best snake or all the snakes
-        if (snakeAI.replayBest) {
-            bestSnake.show();
-            bestSnake.brain.show(0, 0, 360, 790, bestSnake.vision, bestSnake.decision);  //show the brain of the best snake
+    public void show(PApplet parent) {  //show either the best snake or all the snakes
+        if (SnakeAI.replayBest) {
+            bestSnake.show(parent);
+            bestSnake.brain.show(parent, 0, 0, 360, 790, bestSnake.vision, bestSnake.decision);  //show the brain of the best snake
         } else {
-            for (int i = 0; i < snakes.length; i++) {
-                snakes[i].show();
+            for (Snake snake : snakes) {
+                snake.show(parent);
             }
         }
     }
@@ -63,16 +93,16 @@ class Population {
     public void setBestSnake() {  //set the best snake of the generation
         float max = 0;
         int maxIndex = 0;
-        for (int i = 0; i < snakes.length; i++) {
-            if (snakes[i].fitness > max) {
-                max = snakes[i].fitness;
+        for (int i = 0; i < snakes.size(); i++) {
+            if (snakes.get(i).fitness > max) {
+                max = snakes.get(i).fitness;
                 maxIndex = i;
             }
         }
         if (max > bestFitness) {
             bestFitness = max;
-            bestSnake = snakes[maxIndex].cloneForReplay();
-            bestSnakeScore = snakes[maxIndex].score;
+            bestSnake = snakes.get(maxIndex).cloneForReplay();
+            bestSnakeScore = snakes.get(maxIndex).score;
             //samebest = 0;
             //mutationRate = defaultMutation;
         } else {
@@ -89,48 +119,49 @@ class Population {
     public Snake selectParent() {  //selects a random number in range of the fitnesssum and if a snake falls in that range then select it
         float rand = snakeAI.random(fitnessSum);
         float summation = 0;
-        for (int i = 0; i < snakes.length; i++) {
-            summation += snakes[i].fitness;
+        for (Snake snake : snakes) {
+            summation += snake.fitness;
             if (summation > rand) {
-                return snakes[i];
+                return snake;
             }
         }
-        return snakes[0];
+        return snakes.get(0);
     }
 
     public void naturalSelection() {
-        Snake[] newSnakes = new Snake[snakes.length];
+        List<Snake> newSnakes = new ArrayList<>(snakes.size());
 
         setBestSnake();
         calculateFitnessSum();
 
-        newSnakes[0] = bestSnake.clone();  //add the best snake of the prior generation into the new generation
-        for (int i = 1; i < snakes.length; i++) {
+        newSnakes.add(bestSnake.clone());  //add the best snake of the prior generation into the new generation
+        for (int i = 1; i < snakes.size(); i++) {
             Snake child = selectParent().crossover(selectParent());
             child.mutate();
-            newSnakes[i] = child;
+            newSnakes.add(child);
         }
-        snakes = newSnakes.clone();
+        snakes.clear();
+        snakes.addAll(newSnakes);
         snakeAI.evolution.add(bestSnakeScore);
         gen += 1;
     }
-
-    public void mutate() {
-        for (int i = 1; i < snakes.length; i++) {  //start from 1 as to not override the best snake placed in index 0
-            snakes[i].mutate();
-        }
-    }
+//
+//    public void mutate() {
+//        for (Snake snake : snakes) {
+//            snake.mutate();
+//        }
+//    }
 
     public void calculateFitness() {  //calculate the fitnesses for each snake
-        for (int i = 0; i < snakes.length; i++) {
-            snakes[i].calculateFitness();
+        for (Snake snake : snakes) {
+            snake.calculateFitness();
         }
     }
 
     public void calculateFitnessSum() {  //calculate the sum of all the snakes fitnesses
         fitnessSum = 0;
-        for (int i = 0; i < snakes.length; i++) {
-            fitnessSum += snakes[i].fitness;
+        for (Snake snake : snakes) {
+            fitnessSum += snake.fitness;
         }
     }
 }

@@ -4,7 +4,9 @@ import processing.core.PApplet;
 import processing.core.PConstants;
 import processing.core.PVector;
 
+import java.awt.*;
 import java.util.ArrayList;
+import java.util.concurrent.ThreadLocalRandom;
 
 class Snake {
 
@@ -32,6 +34,7 @@ class Snake {
     NeuralNet brain;
 
     private int foodCounter = 0;
+    private final float hue = ThreadLocalRandom.current().nextFloat();
 
     Snake(SnakeAI snakeAI) {
         this(snakeAI, snakeAI.hidden_layers);
@@ -42,7 +45,7 @@ class Snake {
         head = new PVector(800, snakeAI.height / 2);
         food = new Food(foodCounter++);
         body = new ArrayList<>();
-        if (!snakeAI.humanPlaying) {
+        if (!SnakeAI.humanPlaying) {
             vision = new float[24];
             decision = new float[4];
             foodList = new ArrayList<>();
@@ -95,24 +98,36 @@ class Snake {
         return false;
     }
 
-    public void show() {  //show the snake
-        food.show(snakeAI);
-        snakeAI.fill(255);
-        snakeAI.stroke(0);
+    public void show(PApplet parent) {  //show the snake
+        if (!dead) {
+            food.show(parent);
+        }
+        parent.fill(Color.HSBtoRGB(hue, 1, 1));
+        parent.stroke(0);
         for (int i = 0; i < body.size(); i++) {
-            snakeAI.rect(body.get(i).x, body.get(i).y, SnakeAI.SIZE, SnakeAI.SIZE);
+            parent.rect(body.get(i).x, body.get(i).y, SnakeAI.SIZE, SnakeAI.SIZE);
         }
         if (dead) {
-            snakeAI.fill(150);
+            parent.fill(Color.HSBtoRGB(hue, 1, .5f));
         } else {
-            snakeAI.fill(255);
+            parent.fill(Color.HSBtoRGB(hue, 1, 1));
         }
-        snakeAI.rect(head.x, head.y, SnakeAI.SIZE, SnakeAI.SIZE);
+        parent.rect(head.x, head.y, SnakeAI.SIZE, SnakeAI.SIZE);
+        if (replay && SnakeAI.seeVision) {
+            drawDirectionInformation(new PVector(-SnakeAI.SIZE, 0), parent);
+            drawDirectionInformation(new PVector(-SnakeAI.SIZE, -SnakeAI.SIZE), parent);
+            drawDirectionInformation(new PVector(0, -SnakeAI.SIZE), parent);
+            drawDirectionInformation(new PVector(SnakeAI.SIZE, -SnakeAI.SIZE), parent);
+            drawDirectionInformation(new PVector(SnakeAI.SIZE, 0), parent);
+            drawDirectionInformation(new PVector(SnakeAI.SIZE, SnakeAI.SIZE), parent);
+            drawDirectionInformation(new PVector(0, SnakeAI.SIZE), parent);
+            drawDirectionInformation(new PVector(-SnakeAI.SIZE, SnakeAI.SIZE), parent);
+        }
     }
 
     public void move() {  //move the snake
         if (!dead) {
-            if (!snakeAI.humanPlaying && !snakeAI.modelLoaded) {
+            if (!SnakeAI.humanPlaying && !SnakeAI.modelLoaded) {
                 lifetime++;
                 lifeLeft--;
             }
@@ -124,7 +139,7 @@ class Snake {
                 dead = true;
             } else if (bodyCollide(head.x, head.y)) {
                 dead = true;
-            } else if (lifeLeft <= 0 && !snakeAI.humanPlaying) {
+            } else if (lifeLeft <= 0 && !SnakeAI.humanPlaying) {
                 dead = true;
             }
         }
@@ -133,7 +148,7 @@ class Snake {
     public void eat() {  //eat food
         int len = body.size() - 1;
         score++;
-        if (!snakeAI.humanPlaying && !snakeAI.modelLoaded) {
+        if (!SnakeAI.humanPlaying && !SnakeAI.modelLoaded) {
             if (lifeLeft < 500) {
                 if (lifeLeft > 400) {
                     lifeLeft = 500;
@@ -152,7 +167,7 @@ class Snake {
             while (bodyCollide(food.pos.x, food.pos.y)) {
                 food = new Food(foodCounter++);
             }
-            if (!snakeAI.humanPlaying) {
+            if (!SnakeAI.humanPlaying) {
                 foodList.add(food);
             }
         } else {  //if the snake is a replay, then we dont want to create new random foods, we want to see the positions the best snake had to collect
@@ -263,34 +278,47 @@ class Snake {
                 bodyFound = true;
                 look[1] = 1;
             }
-            if (replay && snakeAI.seeVision) {
-                snakeAI.stroke(0, 255, 0);
-                snakeAI.point(pos.x, pos.y);
-                if (foodFound) {
-                    snakeAI.noStroke();
-                    snakeAI.fill(255, 255, 51);
-                    snakeAI.ellipseMode(PConstants.CENTER);
-                    snakeAI.ellipse(pos.x, pos.y, 5, 5);
-                }
-                if (bodyFound) {
-                    snakeAI.noStroke();
-                    snakeAI.fill(102, 0, 102);
-                    snakeAI.ellipseMode(PConstants.CENTER);
-                    snakeAI.ellipse(pos.x, pos.y, 5, 5);
-                }
-            }
             pos.add(direction);
             distance += 1;
-        }
-        if (replay && snakeAI.seeVision) {
-            snakeAI.noStroke();
-            snakeAI.fill(0, 255, 0);
-            snakeAI.ellipseMode(PConstants.CENTER);
-            snakeAI.ellipse(pos.x, pos.y, 5, 5);
         }
         look[2] = 1 / distance;
         return look;
     }
+
+    public void drawDirectionInformation(PVector direction, PApplet parent) {  //look in a direction and check for food, body and wall
+        PVector pos = new PVector(head.x, head.y);
+        boolean foodFound = false;
+        boolean bodyFound = false;
+        pos.add(direction);
+        while (!wallCollide(pos.x, pos.y)) {
+            if (!foodFound && foodCollide(pos.x, pos.y)) {
+                foodFound = true;
+            }
+            if (!bodyFound && bodyCollide(pos.x, pos.y)) {
+                bodyFound = true;
+            }
+            parent.stroke(0, 255, 0);
+            parent.point(pos.x, pos.y);
+            if (foodFound) {
+                parent.noStroke();
+                parent.fill(255, 255, 51);
+                parent.ellipseMode(PConstants.CENTER);
+                parent.ellipse(pos.x, pos.y, 5, 5);
+            }
+            if (bodyFound) {
+                parent.noStroke();
+                parent.fill(102, 0, 102);
+                parent.ellipseMode(PConstants.CENTER);
+                parent.ellipse(pos.x, pos.y, 5, 5);
+            }
+            pos.add(direction);
+        }
+        parent.noStroke();
+        parent.fill(0, 255, 0);
+        parent.ellipseMode(PConstants.CENTER);
+        parent.ellipse(pos.x, pos.y, 5, 5);
+    }
+
 
     public void think() {  //think about what direction to move
         decision = brain.output(vision);
