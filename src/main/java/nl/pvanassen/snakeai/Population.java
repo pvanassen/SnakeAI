@@ -5,7 +5,9 @@ import processing.core.PApplet;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -16,7 +18,6 @@ class Population {
 
     private final SnakeAI snakeAI;
     List<Snake> snakes;
-    Snake bestSnake;
 
     int bestSnakeScore = 0;
     int gen = 0;
@@ -31,8 +32,6 @@ class Population {
         for (int i = 0; i < size; i++) {
             snakes.add(new Snake(snakeAI));
         }
-        bestSnake = snakes.get(0).clone();
-        bestSnake.replay = true;
     }
 
     public boolean done() {  //check if all the snakes in the population are dead
@@ -41,25 +40,15 @@ class Population {
                 return false;
             }
         }
-        if (!bestSnake.dead) {
-            return false;
-        }
         return true;
     }
 
-    public void update() {  //update all the snakes in the generation
-        List<Snake> livingSnakes = Stream.concat(snakes.stream(), Stream.of(bestSnake))
-                .filter(snake -> !snake.dead)
-                .collect(Collectors.toList());
-        int partitionSize = (int)Math.ceil(livingSnakes.size() / (float)Runtime.getRuntime().availableProcessors());
-        Lists.partition(livingSnakes, partitionSize)
+    public void start() {
+        int partitionSize = (int)Math.ceil(snakes.size() / (float)Runtime.getRuntime().availableProcessors());
+        Lists.partition(snakes, partitionSize)
                 .stream()
                 .map(Task::new)
                 .forEach(pool::submit);
-
-        if (!pool.awaitQuiescence(1, TimeUnit.SECONDS)) {
-            throw new IllegalArgumentException("Pool not done: " + pool);
-        }
     }
 
     static class Task implements Runnable {
@@ -71,26 +60,23 @@ class Population {
 
         @Override
         public void run() {
-            for (Snake snake : snakes) {
-                snake.look();
-                snake.think();
-                snake.move();
+            while(true) {
+                List<Snake> livingSnakes = snakes.stream()
+                        .filter(snake -> !snake.dead)
+                        .collect(Collectors.toList());
+                if (livingSnakes.isEmpty()) {
+                    break;
+                }
+                for (Snake snake : livingSnakes) {
+                    snake.look();
+                    snake.think();
+                    snake.move();
+                }
             }
         }
     }
 
-    public void show(PApplet parent) {  //show either the best snake or all the snakes
-        if (SnakeAI.replayBest) {
-            bestSnake.show(parent);
-            bestSnake.brain.show(parent, 0, 0, 360, 790, bestSnake.vision, bestSnake.decision);  //show the brain of the best snake
-        } else {
-            for (Snake snake : snakes) {
-                snake.show(parent);
-            }
-        }
-    }
-
-    public void setBestSnake() {  //set the best snake of the generation
+    public Optional<Snake> getBestSnake() {  //set the best snake of the generation
         float max = 0;
         int maxIndex = 0;
         for (int i = 0; i < snakes.size(); i++) {
@@ -101,18 +87,10 @@ class Population {
         }
         if (max > bestFitness) {
             bestFitness = max;
-            bestSnake = snakes.get(maxIndex).cloneForReplay();
             bestSnakeScore = snakes.get(maxIndex).score;
-            //samebest = 0;
-            //mutationRate = defaultMutation;
+            return Optional.of(snakes.get(maxIndex).cloneForReplay());
         } else {
-            bestSnake = bestSnake.cloneForReplay();
-     /*
-     samebest++;
-     if(samebest > 2) {  //if the best snake has remained the same for more than 3 generations, raise the mutation rate
-        mutationRate *= 2;
-        samebest = 0;
-     }*/
+            return Optional.empty();
         }
     }
 
@@ -131,10 +109,9 @@ class Population {
     public void naturalSelection() {
         List<Snake> newSnakes = new ArrayList<>(snakes.size());
 
-        setBestSnake();
         calculateFitnessSum();
 
-        newSnakes.add(bestSnake.clone());  //add the best snake of the prior generation into the new generation
+        newSnakes.add(getBestSnake().orElse(snakes.get(ThreadLocalRandom.current().nextInt(snakes.size()))).clone());  //add the best snake of the prior generation into the new generation
         for (int i = 1; i < snakes.size(); i++) {
             Snake child = selectParent().crossover(selectParent());
             child.mutate();

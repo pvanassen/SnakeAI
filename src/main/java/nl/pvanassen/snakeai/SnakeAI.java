@@ -8,13 +8,14 @@ import processing.data.TableRow;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 
 public class SnakeAI extends PApplet {
 
     static final int SIZE = 20;
     final int hidden_nodes = 16;
     final int hidden_layers = 2;
-    final int fps = 100;  //15 is ideal for self play, increasing for AI does not directly increase speed, speed is dependant on processing power
+    final int fps = 60;  //15 is ideal for self play, increasing for AI does not directly increase speed, speed is dependant on processing power
 
     int highscore = 0;
 
@@ -43,6 +44,8 @@ public class SnakeAI extends PApplet {
 
     Population pop;
 
+    BestSnake bestSnake;
+
     public void settings() {
         size(1200, 800);
     }
@@ -60,6 +63,8 @@ public class SnakeAI extends PApplet {
             snake = new Snake(this);
         } else {
             pop = new Population(this, 20000); //adjust size of population
+            pop.start();
+            bestSnake = new BestSnake(pop.snakes.get(ThreadLocalRandom.current().nextInt(pop.snakes.size())));
         }
     }
 
@@ -82,22 +87,32 @@ public class SnakeAI extends PApplet {
             }
         } else {
             if (!modelLoaded) {
-                if (pop.done()) {
-                    highscore = pop.bestSnake.score;
+                println("Pop done: " + pop.done());
+                println("Best done: " + bestSnake.done());
+                println("Done: " + (pop.done() && bestSnake.done()));
+                if (pop.done() && bestSnake.done()) {
+                    highscore = bestSnake.getScore();
+                    bestSnake = pop.getBestSnake()
+                            .map(BestSnake::new)
+                            .orElse(new BestSnake(pop.snakes.get(ThreadLocalRandom.current().nextInt(pop.snakes.size()))));
+//                            .orElseThrow(IllegalArgumentException::new);
+                            // .orElse(this.bestSnake);
                     pop.calculateFitness();
                     pop.naturalSelection();
+                    pop.start();
                 } else {
-                    pop.update();
-                    pop.show(this);
+                    bestSnake.update();
+                    bestSnake.show(this);
                 }
                 fill(150);
                 textSize(25);
                 textAlign(LEFT);
-                text("GEN : " + pop.gen, 120, 60);
-                //text("BEST FITNESS : "+pop.bestFitness,120,50);
-                //text("MOVES LEFT : "+pop.bestSnake.lifeLeft,120,70);
-                text("MUTATION RATE : " + mutationRate * 100 + "%", 120, 90);
-                text("SCORE : " + pop.bestSnake.score, 120, height - 45);
+                text("GEN : " + pop.gen, 120, 50);
+                text("BEST FITNESS : "+pop.bestFitness,120,70);
+                text("MOVES LEFT : "+bestSnake.getLifeLeft(),120,90);
+                text("MUTATION RATE : " + mutationRate * 100 + "%", 120, 110);
+                // --- bottom --- //
+                text("SCORE : " + bestSnake.getScore(), 120, height - 45);
                 text("HIGHSCORE : " + highscore, 120, height - 15);
                 increaseMut.show();
                 decreaseMut.show();
@@ -185,7 +200,7 @@ public class SnakeAI extends PApplet {
         } else {
             String path = selection.getAbsolutePath();
             Table modelTable = new Table();
-            Snake modelToSave = pop.bestSnake.clone();
+            Snake modelToSave = bestSnake.clone();
             Matrix[] modelWeights = modelToSave.brain.pull();
             float[][] weights = new float[modelWeights.length][];
             for (int i = 0; i < weights.length; i++) {
